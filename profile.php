@@ -122,6 +122,7 @@ function getStatusBadge($status) {
     </style>
 </head>
 <body>
+     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <?php include 'header.php'; ?>
     
     <div class="profile-header">

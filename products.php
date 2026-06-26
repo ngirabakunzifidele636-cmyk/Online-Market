@@ -221,7 +221,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
                     'id' => 9, 
                     'name' => 'HP Intel Core i5', 
                     'price' => 1099.99, 
-                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.TnN8Fzqy3hPLqN0jylFmUgHaHa?pid=Api&h=220&P=0',
+                    'image' => 'https://tse2.mm.bing.net/th/id/OIP.3SFcCP8zFI65iEFcP945qAHaHa?pid=Api&h=220&P=0',
                     'description' => '8GB RAM, 256GB SSD, Windows 10 Home'
                 ],
                 [
@@ -242,7 +242,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
                     'id' => 12, 
                     'name' => 'lenovo think book 15 ', 
                     'price' => 2999.99, 
-                    'image' => 'https://tse3.mm.bing.net/th/id/OIP.yGRLGFYwKkNhIDRxriaStQHaHa?pid=Api&P=0&h=220',
+                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.-_FMXk_MOnwf7n1ZX1IKlgHaFc?pid=Api&h=220&P=0',
                     'description' => '16GB RAM, 1TB SSD, Windows 11 Home'
                 ],
             ];

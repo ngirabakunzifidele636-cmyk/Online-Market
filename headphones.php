@@ -194,7 +194,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
                     'id' => 404, 
                     'name' => 'Sennheiser Momentum 4', 
                     'price' => 349.99, 
-                    'image' => 'https://tse2.mm.bing.net/th/id/OIP._ACONSOHl05R5Hmcvp_4YwHaHa?pid=Api&P=0&h=220',
+                    'image' => 'https://tse2.mm.bing.net/th/id/OIP.SEMDSe0sbNfxzg_nkOgzpAHaEK?pid=Api&h=220&P=0',
                     'description' => '60-hour battery, Adaptive Noise Cancellation'
                 ],
                 [
@@ -222,7 +222,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
                     'id' => 408, 
                     'name' => 'Samsung Galaxy Buds2 Pro', 
                     'price' => 229.99, 
-                    'image' => 'https://tse2.mm.bing.net/th/id/OIP.16syOSSl1PljXD1r3nOBcwHaHr?pid=Api&P=0&h=220',
+                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.A7UWi8By2b0-32VmOui1UAHaEK?pid=Api&h=220&P=0',
                     'description' => '24-bit Hi-Fi, Intelligent ANC, 360 Audio'
                 ],
                 [
@@ -243,14 +243,14 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
                     'id' => 411, 
                     'name' => 'Sony WF-1000XM5', 
                     'price' => 299.99, 
-                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.Kb-u4ogPLzDMGS_sbaMq8QHaHa?pid=Api&P=0&h=220',
+                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.Spv1aSBCtL2WYcVANDFewgHaE8?pid=Api&h=220&P=0',
                     'description' => 'Industry-leading ANC earbuds, 24-hour battery'
                 ],
                 [
                     'id' => 412, 
                     'name' => 'Bang & Olufsen Beoplay H95', 
                     'price' => 899.99, 
-                    'image' => 'https://tse1.mm.bing.net/th/id/OIP.2vBGsyS89aDUeu0c7Gt1GAHaHH?pid=Api&P=0&h=220',
+                    'image' => 'https://tse2.mm.bing.net/th/id/OIP.QrEXMcWXM4SBYTDh0k2VvwHaEK?pid=Api&h=220&P=0',
                     'description' => 'Luxury headphones, 50-hour battery, ANC'
                 ],
             ];

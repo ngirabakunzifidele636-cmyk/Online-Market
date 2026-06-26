@@ -201,6 +201,7 @@ if (isset($_GET['q']) && !empty(trim($_GET['q']))) {
     </style>
 </head>
 <body>
+     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <?php include 'header.php'; ?>
     
     <div class="container mt-4">
