@@ -161,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             overflow: hidden;
+            animation: 0.6s popup  linear; 
         }
         .register-header {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
@@ -185,6 +186,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-top: 5px;
             border-radius: 3px;
             transition: all 0.3s ease;
+        }
+        @keyframes popup {
+            0%{
+                transform: scale(0.1);
+            }
+            30%{
+                transform: scale(0.6);
+            }
+            60%{
+                transform: scale(0.9);
+            }
+            90{
+                transform: scale(1);
+            }
         }
     </style>
 </head>
