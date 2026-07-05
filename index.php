@@ -14,14 +14,14 @@
 
 <?php 
 // Display success message if exists
-if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message'])) {
-    echo '<div class="container"><div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>' . $_SESSION['success_message'] . '
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div></div>';
-    // Clear the message after displaying
-    $_SESSION['success_message'] = '';
-}
+// if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message'])) {
+//     echo '<div class="container"><div class="alert alert-success alert-dismissible fade show" role="alert">
+//             <i class="fas fa-check-circle me-2"></i>' . $_SESSION['success_message'] . '
+//             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+//           </div></div>';
+//     // Clear the message after displaying
+//     $_SESSION['success_message'] = '';
+// }                                                
 ?>
 
 <!-- Rest of your index.php content remains the same -->
