@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['order_success'])) {
 $order_number = $_SESSION['order_number'];
 $order_total = $_SESSION['order_total'];
 $email_sent = $_SESSION['email_sent'] ?? false;
+$order_id = $_SESSION['order_id'] ?? null;
 
 // Clear the session variables
 unset($_SESSION['order_success']);
@@ -18,9 +19,17 @@ unset($_SESSION['order_number']);
 unset($_SESSION['order_total']);
 unset($_SESSION['order_id']);
 unset($_SESSION['email_sent']);
+
 try {
     $user_id = $_SESSION['user_id'];
-      $conn->exec("
+    
+    // Check if connection exists
+    if (!isset($conn)) {
+        throw new Exception("Database connection not found");
+    }
+    
+    // Create notifications table if it doesn't exist
+    $conn->exec("
         CREATE TABLE IF NOT EXISTS notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
@@ -32,15 +41,20 @@ try {
             is_read TINYINT DEFAULT 0,
             action_url VARCHAR(255) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             INDEX idx_user_read (user_id, is_read)
         )
     ");
 
+    // Prepare and execute notification insertion
     $notif_stmt = $conn->prepare("
-        INSERT INTO notifications (user_id, title, message, type, icon, category, action_url, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        INSERT INTO notifications (user_id, title, message, type, icon, category, action_url, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ");
+    
+    // Use proper URL with order ID for redirection
+    $action_url = 'order_details.php?order_id=' . $order_id;
     
     $notif_stmt->execute([
         $user_id,
@@ -49,10 +63,15 @@ try {
         'success',
         'fa-check-circle',
         'order',
-        'orders.php'
+        $action_url
     ]);
+    
+    error_log("Notification created for user $user_id: Order #$order_number confirmed");
+    
 } catch (PDOException $e) {
     error_log("Failed to create confirmation notification: " . $e->getMessage());
+} catch (Exception $e) {
+    error_log("Error in order_confirmation: " . $e->getMessage());
 }
 ?>
 

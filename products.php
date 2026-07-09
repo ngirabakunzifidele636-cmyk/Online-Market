@@ -2,7 +2,8 @@
 session_start();
 include 'config.php';
 
-// Check if user is logged in
+
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
@@ -12,20 +13,23 @@ $user_id = $_SESSION['user_id'];
 $success = '';
 
 
-// Handle add to cart
+
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     $product_id = $_POST['product_id'];
     $product_name = $_POST['product_name'];
     $product_price = $_POST['product_price'];
     $product_image = $_POST['product_image'];
-    $quantity = 1; // Default quantity
+    $quantity = 1; 
+    
     
     try {
-        // Check if cart table exists
+        
+        
         $cart_table = $conn->query("SHOW TABLES LIKE 'cart'")->fetch();
         
         if (!$cart_table) {
-            // Create cart table if it doesn't exist
+            // Create cart table 
             $cart_sql = "
             CREATE TABLE IF NOT EXISTS cart (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
             $conn->exec($cart_sql);
         }
         
-        // Check if item already in cart
+        
+        
         $check_stmt = $conn->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?");
         $check_stmt->execute([$user_id, $product_id]);
         $existing_item = $check_stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,14 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
         $total_price = $product_price * $quantity;
         
         if ($existing_item) {
-            // Update quantity
+            
+            
             $new_quantity = $existing_item['quantity'] + $quantity;
             $new_total = $product_price * $new_quantity;
             
             $update_stmt = $conn->prepare("UPDATE cart SET quantity = ?, total_price = ? WHERE id = ?");
             $update_stmt->execute([$new_quantity, $new_total, $existing_item['id']]);
         } else {
-            // Add new item - FIXED INSERT STATEMENT
+            
+            
            
  $insert_stmt = $conn->prepare("
                 INSERT INTO cart (user_id, product_id, product_name, product_price, product_image, quantity, total_price) 
@@ -84,7 +91,7 @@ $insert_stmt->execute([
     }
 }
 
-// Display success message if exists
+
 if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message'])) {
     $success = $_SESSION['success_message'];
     $_SESSION['success_message'] = '';
@@ -130,24 +137,26 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
 </head>
 <body>
     
-    <!-- Navigation -->
+    
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <?php include 'header.php'; ?>
 
     <div class="container mt-4">
            
-    <!-- </nav> -->
+    
+    
 
     <div class="container mt-4">
         <h1 class="mb-4">Our Products <i class="fas fa-shopping-bag"></i></h1>
         <p class="lead">Discover our amazing collection of tech products.</p>
 
         <?php if ($success): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <!-- <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="fas fa-check-circle"></i> <?= $success ?>
                 <a href="cart.php" class="btn btn-outline-success btn-sm ms-2">View Cart</a>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            </div> -->
         <?php endif; ?>
 
         <?php if (isset($error)): ?>
@@ -159,7 +168,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
 
                 <div class="row mt-4">
             <?php
-            // Sample products data with real images
+            
             $products = [
                 [
                     'id' => 1, 
@@ -274,7 +283,8 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
             }
             ?>
         </div>
-    <!-- Features Section -->
+    
+        
     <div class="container mt-5">
         <div class="row text-center">
             <div class="col-md-4 mb-4">
@@ -301,7 +311,8 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
         </div>
     </div>
 
-    <!-- Footer -->
+   
+    
     <footer class="bg-dark text-light mt-5 py-4">
         <div class="container">
             <div class="row">
@@ -318,7 +329,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-dismiss alerts after 5 seconds
+        
         setTimeout(function() {
             var alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
@@ -327,7 +338,7 @@ if (isset($_SESSION['success_message']) && !empty($_SESSION['success_message']))
             });
         }, 5000);
 
-        // Add smooth scrolling
+        
         document.addEventListener('DOMContentLoaded', function() {
             const links = document.querySelectorAll('a[href^="#"]');
             

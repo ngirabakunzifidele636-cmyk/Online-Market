@@ -175,7 +175,7 @@ function getStatusBadge($status) {
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-number">0</div>
+                    <div class="stat-number">10</div>
                     <div class="stat-label">Wishlist Items</div>
                 </div>
             </div>
@@ -247,7 +247,7 @@ function getStatusBadge($status) {
                             <?php if ($order_count > 3): ?>
                                 <div class="mt-3 text-center">
                                     <a href="order_details.php?order_id=<?= $order['id'] ?>" class="btn btn-sm btn-outline-primary">View Details</a>
-                                    <!-- <a href="order_details.php?order_id=<?= $order['id'] ?>">View Details</a> -->
+                                    <!-- <a href="order_details.php?order_id=<?= $order['id'] ?>">View Details</a>  -->
                                 </div>
                             <?php endif; ?>
                         <?php else: ?>

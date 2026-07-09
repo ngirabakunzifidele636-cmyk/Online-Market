@@ -1,6 +1,14 @@
 <?php
 session_start();
 include 'config.php';
+$unread_count = 0;
+try {
+    $notif_count_stmt = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+    $notif_count_stmt->execute([$_SESSION['user_id']]);
+    $unread_count = $notif_count_stmt->fetchColumn();
+} catch (PDOException $e) {
+    error_log("Failed to get notification count: " . $e->getMessage());
+}
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {

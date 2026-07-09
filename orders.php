@@ -10,6 +10,43 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Handle order deletion from orders list
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_order'])) {
+    $order_id = $_POST['order_id'];
+    
+    try {
+        $pdo = $conn;
+        
+        // Check if order belongs to user and can be deleted
+        $check_stmt = $pdo->prepare("SELECT order_status, order_number FROM orders WHERE id = ? AND user_id = ?");
+        $check_stmt->execute([$order_id, $user_id]);
+        $order_check = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($order_check && in_array($order_check['order_status'], ['cancelled', 'delivered'])) {
+            // Delete order items first
+            $delete_items = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
+            $delete_items->execute([$order_id]);
+            
+            // Delete the order
+            $delete_order = $pdo->prepare("DELETE FROM orders WHERE id = ? AND user_id = ?");
+            $delete_order->execute([$order_id, $user_id]);
+            
+            $_SESSION['success_message'] = "Order #{$order_check['order_number']} has been deleted.";
+        } else {
+            $_SESSION['error_message'] = "This order cannot be deleted.";
+        }
+        
+        header("Location: orders.php");
+        exit();
+        
+    } catch(PDOException $e) {
+        error_log("Error deleting order: " . $e->getMessage());
+        $_SESSION['error_message'] = "Failed to delete order. Please try again.";
+        header("Location: orders.php");
+        exit();
+    }
+}
+
 try {
     $pdo = $conn;
     
@@ -242,6 +279,36 @@ function getStatusIcon($status) {
             color: white;
         }
         
+        .order-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        
+        .delete-btn-sm {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .delete-btn-sm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+            color: white;
+        }
+        
         @media (max-width: 768px) {
             .order-details {
                 grid-template-columns: 1fr;
@@ -265,6 +332,11 @@ function getStatusIcon($status) {
                 flex-direction: column;
                 gap: 10px;
                 text-align: center;
+            }
+            
+            .order-actions {
+                flex-wrap: wrap;
+                justify-content: center;
             }
         }
     </style>
@@ -299,6 +371,22 @@ function getStatusIcon($status) {
 
             <!-- Orders Content -->
             <div class="orders-content">
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $_SESSION['success_message']; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['success_message']); ?>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['error_message'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $_SESSION['error_message']; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['error_message']); ?>
+                <?php endif; ?>
+                
                 <?php if (!empty($orders)): ?>
                     <div class="orders-list">
                         <?php foreach($orders as $order): ?>
@@ -346,6 +434,15 @@ function getStatusIcon($status) {
                                             <i class="fas fa-eye"></i>
                                             View Details
                                         </a>
+                                        <?php if (in_array($order['status'], ['cancelled', 'delivered'])): ?>
+                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete order #<?php echo htmlspecialchars($order['order_number']); ?>? This action cannot be undone.');">
+                                                <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                                <button type="submit" name="delete_order" class="delete-btn-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -373,7 +470,7 @@ function getStatusIcon($status) {
                 
                 <!-- Back Button -->
                 <div class="text-center mt-4">
-                    <a href="order_success.php" class="back-btn">
+                    <a href="dashboard.php" class="back-btn">
                         <i class="fas fa-arrow-left"></i>
                         Back to Dashboard
                     </a>
@@ -385,6 +482,5 @@ function getStatusIcon($status) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-</div>
 
 <?php include 'footer.php'; ?>

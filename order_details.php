@@ -1,7 +1,78 @@
 <?php
 session_start();
 require_once 'config.php';
+// Handle order cancellation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order'])) {
+    $order_id = $_POST['order_id'];
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        $pdo = $conn;
+        
+        // Check if order belongs to user and is in cancellable state
+        $check_stmt = $pdo->prepare("SELECT order_status, order_number FROM orders WHERE id = ? AND user_id = ?");
+        $check_stmt->execute([$order_id, $user_id]);
+        $order_check = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($order_check && in_array($order_check['order_status'], ['pending', 'confirmed'])) {
+            // Update order status to cancelled
+            $cancel_stmt = $pdo->prepare("UPDATE orders SET order_status = 'cancelled', updated_at = NOW() WHERE id = ? AND user_id = ?");
+            $cancel_stmt->execute([$order_id, $user_id]);
+            
+            $_SESSION['success_message'] = "Order #{$order_check['order_number']} has been cancelled successfully.";
+        } else {
+            $_SESSION['error_message'] = "This order cannot be cancelled.";
+        }
+        
+        header("Location: order_details.php?order_id=" . $order_id);
+        exit();
+        
+    } catch(PDOException $e) {
+        error_log("Error cancelling order: " . $e->getMessage());
+        $_SESSION['error_message'] = "Failed to cancel order. Please try again.";
+        header("Location: order_details.php?order_id=" . $order_id);
+        exit();
+    }
+}
 
+// Handle order deletion from details page
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_order'])) {
+    $order_id = $_POST['order_id'];
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        $pdo = $conn;
+        
+        // Check if order belongs to user and can be deleted
+        $check_stmt = $pdo->prepare("SELECT order_status, order_number FROM orders WHERE id = ? AND user_id = ?");
+        $check_stmt->execute([$order_id, $user_id]);
+        $order_check = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($order_check && in_array($order_check['order_status'], ['cancelled', 'delivered'])) {
+            // Delete order items first
+            $delete_items = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
+            $delete_items->execute([$order_id]);
+            
+            // Delete the order
+            $delete_order = $pdo->prepare("DELETE FROM orders WHERE id = ? AND user_id = ?");
+            $delete_order->execute([$order_id, $user_id]);
+            
+            $_SESSION['success_message'] = "Order #{$order_check['order_number']} has been deleted.";
+            header("Location: orders.php");
+            exit();
+        } else {
+            $_SESSION['error_message'] = "This order cannot be deleted. Only cancelled or delivered orders can be deleted.";
+            header("Location: order_details.php?order_id=" . $order_id);
+            exit();
+        }
+        
+    } catch(PDOException $e) {
+        error_log("Error deleting order: " . $e->getMessage());
+        $_SESSION['error_message'] = "Failed to delete order. Please try again.";
+        header("Location: order_details.php?order_id=" . $order_id);
+        exit();
+    }
+}
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -694,6 +765,28 @@ function getProductCategory($product_name) {
                         <i class="fas fa-shopping-bag"></i>
                         Continue Shopping
                     </a>
+                  
+<div class="text-center mt-4" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <?php if (in_array($order['order_status'], ['pending', 'confirmed'])): ?>
+        <form method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+            <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+            <button type="submit" name="cancel_order" class="back-btn" style="background: linear-gradient(135deg, #ffc107, #e0a800); box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);">
+                <i class="fas fa-times"></i>
+                Cancel Order
+            </button>
+        </form>
+    <?php endif; ?>
+    
+    <?php if (in_array($order['order_status'], ['cancelled', 'delivered'])): ?>
+        <form method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this order? This action cannot be undone.');">
+            <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+            <button type="submit" name="delete_order" class="back-btn" style="background: linear-gradient(135deg, #dc3545, #c82333); box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);">
+                <i class="fas fa-trash"></i>
+                Delete Order
+            </button>
+        </form>
+    <?php endif; ?>
+</div>
                 </div>
             </div>
         </div>

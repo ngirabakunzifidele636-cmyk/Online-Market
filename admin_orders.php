@@ -18,6 +18,63 @@ try {
             $stmt = $pdo->prepare("UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?");
             $stmt->execute([$_POST['order_status'], $_POST['order_id']]);
             $success = "Order status updated successfully!";
+            
+            // Create notification for user
+            try {
+                $order_stmt = $pdo->prepare("SELECT o.*, u.id as user_id, u.email, u.username FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?");
+                $order_stmt->execute([$_POST['order_id']]);
+                $order = $order_stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($order) {
+                    $table_check = $pdo->query("SHOW TABLES LIKE 'notifications'")->fetch();
+                    if (!$table_check) {
+                        $pdo->exec("
+                            CREATE TABLE notifications (
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                user_id INT NOT NULL,
+                                title VARCHAR(255) NOT NULL,
+                                message TEXT NOT NULL,
+                                type VARCHAR(50) DEFAULT 'info',
+                                icon VARCHAR(50) DEFAULT 'fa-bell',
+                                category VARCHAR(50) DEFAULT 'system',
+                                is_read TINYINT DEFAULT 0,
+                                action_url VARCHAR(255) NULL,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                                INDEX idx_user_read (user_id, is_read)
+                            )
+                        ");
+                    }
+                    
+                    $notif_stmt = $pdo->prepare("
+                        INSERT INTO notifications (user_id, title, message, type, icon, category, action_url, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    ");
+                    
+                    $action_url = 'order_details.php?order_id=' . $_POST['order_id'];
+                    $status_messages = [
+                        'pending' => 'Your order is pending review.',
+                        'confirmed' => 'Your order has been confirmed and is being processed.',
+                        'processing' => 'Your order is currently being processed.',
+                        'shipped' => 'Your order has been shipped! Track your delivery.',
+                        'delivered' => 'Your order has been delivered. Thank you for shopping with us!',
+                        'cancelled' => 'Your order has been cancelled.'
+                    ];
+                    
+                    $notif_stmt->execute([
+                        $order['user_id'],
+                        '📦 Order Status Updated',
+                        'Your order #' . $order['order_number'] . ' status changed to: ' . ucfirst($_POST['order_status']) . '. ' . ($status_messages[$_POST['order_status']] ?? ''),
+                        'info',
+                        'fa-truck',
+                        'order',
+                        $action_url
+                    ]);
+                }
+            } catch (PDOException $e) {
+                error_log("Failed to create notification: " . $e->getMessage());
+            }
         }
         elseif (isset($_POST['update_payment_status'])) {
             $stmt = $pdo->prepare("UPDATE orders SET payment_status = ?, updated_at = NOW() WHERE id = ?");
@@ -25,25 +82,75 @@ try {
             $success = "Payment status updated successfully!";
         }
         
-if (isset($_POST['update_order_status'])) {
-    $stmt = $pdo->prepare("UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->execute([$_POST['order_status'], $_POST['order_id']]);
-    $success = "Order status updated successfully!";
-    
-    // Send status update email
-    require_once 'email_config.php';
-    
-    // Get order and user details
-    $order_stmt = $pdo->prepare("SELECT o.*, u.email, u.username, u.first_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?");
-    $order_stmt->execute([$_POST['order_id']]);
-    $order = $order_stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($order) {
-        $email_subject = "Order Status Updated - #{$order['order_number']}";
-        $email_message = EmailTemplates::orderStatusUpdate($order, $order, $order['order_status'], $_POST['order_status']);
-        EmailConfig::sendEmail($order['email'], $email_subject, $email_message);
-    }
-}
+        // Handle order deletion
+        if (isset($_POST['delete_order'])) {
+            $order_id = $_POST['order_id'];
+            
+            try {
+                // Get order details before deletion for notification
+                $order_stmt = $pdo->prepare("SELECT o.*, u.id as user_id, u.email, u.username FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?");
+                $order_stmt->execute([$order_id]);
+                $order = $order_stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($order) {
+                    // Delete order items first (due to foreign key constraint)
+                    $delete_items = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
+                    $delete_items->execute([$order_id]);
+                    
+                    // Delete the order
+                    $delete_order = $pdo->prepare("DELETE FROM orders WHERE id = ?");
+                    $delete_order->execute([$order_id]);
+                    
+                    $success = "Order #{$order['order_number']} deleted successfully!";
+                    
+                    // Create notification for the user
+                    try {
+                        $table_check = $pdo->query("SHOW TABLES LIKE 'notifications'")->fetch();
+                        if (!$table_check) {
+                            $pdo->exec("
+                                CREATE TABLE notifications (
+                                    id INT AUTO_INCREMENT PRIMARY KEY,
+                                    user_id INT NOT NULL,
+                                    title VARCHAR(255) NOT NULL,
+                                    message TEXT NOT NULL,
+                                    type VARCHAR(50) DEFAULT 'info',
+                                    icon VARCHAR(50) DEFAULT 'fa-bell',
+                                    category VARCHAR(50) DEFAULT 'system',
+                                    is_read TINYINT DEFAULT 0,
+                                    action_url VARCHAR(255) NULL,
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                                    INDEX idx_user_read (user_id, is_read)
+                                )
+                            ");
+                        }
+                        
+                        $notif_stmt = $pdo->prepare("
+                            INSERT INTO notifications (user_id, title, message, type, icon, category, action_url, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        ");
+                        
+                        $action_url = 'order_details.php?order_id=' . $order_id;
+                        
+                        $notif_stmt->execute([
+                            $order['user_id'],
+                            '🗑️ Order Deleted',
+                            'Your order #' . $order['order_number'] . ' has been deleted by an administrator.',
+                            'danger',
+                            'fa-trash',
+                            'order',
+                            $action_url
+                        ]);
+                    } catch (PDOException $e) {
+                        error_log("Failed to create notification: " . $e->getMessage());
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Failed to delete order: " . $e->getMessage());
+                $error = "Failed to delete order. Please try again.";
+            }
+        }
     }
     
     // Get filter parameters
@@ -143,6 +250,8 @@ function getStatusBadge($status) {
         .btn:hover { background: #5a6fd8; }
         .btn-outline { background: white; border: 2px solid #667eea; color: #667eea; }
         .btn-outline:hover { background: #667eea; color: white; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
         
         .orders-table { width: 100%; border-collapse: collapse; }
         .orders-table th, .orders-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
@@ -154,7 +263,11 @@ function getStatusBadge($status) {
         .update-btn { padding: 4px 8px; font-size: 11px; background: #27ae60; color: white; border: none; border-radius: 3px; cursor: pointer; }
         
         .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
         .filter-badge { background: #e9ecef; padding: 4px 8px; border-radius: 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+        .delete-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+        .delete-btn:hover { background: #c82333; }
+        .action-buttons { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
     </style>
 </head>
 <body>
@@ -177,6 +290,9 @@ function getStatusBadge($status) {
         <div class="admin-container">
             <?php if(isset($success)): ?>
                 <div class="success"><?php echo $success; ?></div>
+            <?php endif; ?>
+            <?php if(isset($error)): ?>
+                <div class="error"><?php echo $error; ?></div>
             <?php endif; ?>
             
             <!-- Filters -->
@@ -296,9 +412,17 @@ function getStatusBadge($status) {
                                         </form>
                                     </td>
                                     <td>
-                                        <a href="admin_order_details.php?order_id=<?php echo $order['id']; ?>" class="btn">
-                                            View Details
-                                        </a>
+                                        <div class="action-buttons">
+                                            <a href="admin_order_details.php?order_id=<?php echo $order['id']; ?>" class="btn">
+                                                View Details
+                                            </a>
+                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete order #<?php echo htmlspecialchars($order['order_number']); ?>? This action cannot be undone.');">
+                                                <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                                <button type="submit" name="delete_order" class="delete-btn">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

@@ -3,6 +3,16 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+$unread_count = 0;
+if (isset($_SESSION['user_id']) && isset($conn)) {
+    try {
+        $count_stmt = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+        $count_stmt->execute([$_SESSION['user_id']]);
+        $unread_count = $count_stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Failed to get notification count: " . $e->getMessage());
+    }
+}
 
 // Include config if not already included
 if (!isset($conn)) {
@@ -269,7 +279,13 @@ function getNotificationType($type) {
 .navbar{
     /* background: linear-gradient(135deg, #0f172a, #1e293b) !important; */
     padding: 12px 10px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0 auto;
+    
+     
 }
+
 
 .navbar-brand{
     font-size: 1.7rem;
@@ -362,14 +378,24 @@ function getNotificationType($type) {
                     <!-- Notification Bell - Only show for logged in users -->
                     <?php if (isset($_SESSION['user_id'])): ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationDropdown">
-                            <i class="fas fa-bell"></i>
-                            <?php if ($notification_count > 0): ?>
+                        <!-- <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationDropdown">
+                            <i class="fas fa-bell"></i> -->
+                            <!-- <?php if ($notification_count > 0): ?>
                                 <span class="position-absolute top-0 start-100 translate-middle badge badge-notification">
                                     <?php echo $notification_count; ?>
                                 </span>
                             <?php endif; ?>
-                        </a>
+                        </a> -->
+                        <div class="notifications-wrapper" style="position: relative; display: inline-block;"> 
+                            <a href="notifications.php" class="nav-link">
+                               <i class="fas fa-bell"></i>
+                               <?php if ($notification_count > 0): ?>
+                                 <span class="position-absolute top-0 start-100 translate-middle badge badge-notification">
+                                     <?php echo $notification_count; ?>
+                                            </span>
+                                            <?php endif; ?>
+                                            </a>
+                                            </div>
                         <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
                             <li>
                                 <div class="dropdown-header d-flex justify-content-between align-items-center bg-light">
@@ -416,7 +442,7 @@ function getNotificationType($type) {
                                             <i class="fas fa-bell-slash fa-3x text-muted"></i>
                                         </div>
                                         <h6 class="text-muted mb-2">No notifications yet</h6>
-                                        <p class="small text-muted mb-0">When you get notifications, they'll appear here</p>
+                                        <!-- <p class="small text-muted mb-0">When you get notifications, they'll appear here</p> -->
                                     </div>
                                 </li>
                             <?php endif; ?>
@@ -428,7 +454,17 @@ function getNotificationType($type) {
                                         <i class="fas fa-eye me-1"></i> View All Notifications
                                     </a>
                                 </li>
-                                <?php if ($notification_count > 0): ?>
+                                <?php $unread_count = 0;
+if (isset($_SESSION['user_id'])) {
+    try {
+        $count_stmt = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+        $count_stmt->execute([$_SESSION['user_id']]);
+        $unread_count = $count_stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Failed to get notification count: " . $e->getMessage());
+    }
+}
+?> 
                                 <li>
                                     <a class="dropdown-item text-center" href="#" id="markAllRead">
                                         <i class="fas fa-check-double me-1"></i> Mark All as Read
@@ -438,7 +474,7 @@ function getNotificationType($type) {
                             <?php endif; ?>
                         </ul>
                     </li>
-                    <?php endif; ?>
+                    
                     
                     <?php if (isset($_SESSION['user_id'])): ?>
                     <li class="nav-item dropdown">
